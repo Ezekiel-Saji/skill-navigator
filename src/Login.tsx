@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
@@ -6,17 +5,27 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    // For now just navigate to homepage
-    navigate("/home"); 
+    // Redirect to homepage after login
+    navigate("/home");
   };
 
   return (
-    <div className="login-background">
-      <div className="login-container">
+    <div className="login-bg">
+      <div className="login-card">
         <h2>Welcome Back 👋</h2>
-        <input type="text" placeholder="Email" className="login-input" />
-        <input type="password" placeholder="Password" className="login-input" />
-        <button onClick={handleLogin} className="login-button">
+        <p>Login to continue</p>
+
+        <div className="field">
+          <input type="email" required />
+          <label>Email</label>
+        </div>
+
+        <div className="field">
+          <input type="password" required />
+          <label>Password</label>
+        </div>
+
+        <button onClick={handleLogin}>
           Login
         </button>
       </div>
