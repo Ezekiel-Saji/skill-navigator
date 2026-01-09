@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   Upload, 
   FileText, 
@@ -11,10 +13,12 @@ import {
   Brain, 
   Loader2,
   AlertCircle,
-  ArrowRight
+  ArrowRight,
+  Plus,
+  X
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { mockSkills } from "@/lib/mockData";
+import { mockSkills, mockSkillGaps, mockCRI } from "@/lib/mockData";
 
 type UploadState = "idle" | "uploading" | "processing" | "complete" | "error";
 
@@ -23,6 +27,8 @@ const UploadPage = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileName, setFileName] = useState("");
   const [dragActive, setDragActive] = useState(false);
+  const [manualSkills, setManualSkills] = useState("");
+  const [parsedSkills, setParsedSkills] = useState<string[]>([]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -54,6 +60,22 @@ const UploadPage = () => {
     simulateUpload();
   };
 
+  const handleSkillsInput = (value: string) => {
+    setManualSkills(value);
+    // Parse comma-separated skills
+    const skills = value
+      .split(/[,\n]/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    setParsedSkills(skills);
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    const updatedSkills = parsedSkills.filter(s => s !== skillToRemove);
+    setParsedSkills(updatedSkills);
+    setManualSkills(updatedSkills.join(", "));
+  };
+
   const simulateUpload = () => {
     setUploadState("uploading");
     setUploadProgress(0);
@@ -77,7 +99,19 @@ const UploadPage = () => {
     }, 3000);
   };
 
+  const handleAnalyzeSkills = () => {
+    if (parsedSkills.length === 0) return;
+    simulateUpload();
+  };
+
+  // Combine CV extracted skills with manual skills
   const extractedSkills = mockSkills.slice(0, 6);
+  const allSkills = [...extractedSkills.map(s => s.name), ...parsedSkills];
+  const uniqueSkills = [...new Set(allSkills)];
+
+  // Get analysis data
+  const topGaps = mockSkillGaps.slice(0, 3);
+  const cri = mockCRI;
 
   return (
     <PageLayout>
@@ -95,7 +129,7 @@ const UploadPage = () => {
           </div>
 
           {/* Upload Card */}
-          <Card variant="elevated" className="mb-8">
+          <Card variant="elevated" className="mb-6">
             <CardContent className="p-8">
               {uploadState === "idle" && (
                 <div
@@ -142,7 +176,7 @@ const UploadPage = () => {
                     <FileText className="h-8 w-8 text-accent" />
                   </div>
                   <h3 className="font-display font-semibold text-lg mb-2">
-                    Uploading {fileName}
+                    {fileName ? `Uploading ${fileName}` : "Analyzing your skills..."}
                   </h3>
                   <div className="max-w-xs mx-auto mb-4">
                     <Progress value={uploadProgress} variant="accent" />
@@ -159,42 +193,96 @@ const UploadPage = () => {
                     <Brain className="h-8 w-8 text-accent" />
                   </div>
                   <h3 className="font-display font-semibold text-lg mb-2">
-                    AI is Analyzing Your CV
+                    AI is Analyzing Your Skills
                   </h3>
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Extracting skills and experience...
+                    Computing skill gaps and career readiness...
                   </div>
                 </div>
               )}
 
               {uploadState === "complete" && (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle2 className="h-8 w-8 text-success" />
+                <div className="py-8">
+                  <div className="text-center mb-8">
+                    <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle2 className="h-8 w-8 text-success" />
+                    </div>
+                    <h3 className="font-display font-semibold text-lg mb-2">
+                      Analysis Complete!
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      We analyzed {uniqueSkills.length} skills from your profile
+                    </p>
                   </div>
-                  <h3 className="font-display font-semibold text-lg mb-2">
-                    Analysis Complete!
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    We extracted {extractedSkills.length} skills from your CV
-                  </p>
                   
-                  {/* Extracted Skills Preview */}
-                  <div className="flex flex-wrap justify-center gap-2 mb-6">
-                    {extractedSkills.map((skill) => (
-                      <Badge key={skill.id} variant="accent">
-                        {skill.name}
-                      </Badge>
-                    ))}
+                  {/* Skills Identified */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-foreground mb-3">Skills Identified</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {uniqueSkills.slice(0, 10).map((skill, idx) => (
+                        <Badge key={idx} variant="accent">
+                          {skill}
+                        </Badge>
+                      ))}
+                      {uniqueSkills.length > 10 && (
+                        <Badge variant="secondary">+{uniqueSkills.length - 10} more</Badge>
+                      )}
+                    </div>
                   </div>
 
-                  <Link to="/dashboard">
-                    <Button variant="hero" size="lg" className="gap-2">
-                      View Your Dashboard
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  {/* CRI Score */}
+                  <div className="bg-muted/50 rounded-xl p-4 mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-foreground">Career Readiness Index</h4>
+                      <Badge variant={cri.overall >= 70 ? "success" : cri.overall >= 50 ? "warning" : "destructive"}>
+                        {cri.label}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-3xl font-bold text-accent">{cri.overall}</div>
+                      <div className="flex-1">
+                        <Progress value={cri.overall} variant="cri" />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Predicted score after completing roadmap: {cri.predictedScore}
+                    </p>
+                  </div>
+
+                  {/* Top Skill Gaps */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-foreground mb-3">Top Skill Gaps to Address</h4>
+                    <div className="space-y-3">
+                      {topGaps.map((gap, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-muted/30 rounded-lg p-3">
+                          <div className="flex items-center gap-3">
+                            <Badge variant={gap.priority === 'critical' ? 'destructive' : gap.priority === 'high' ? 'warning' : 'secondary'} className="text-xs">
+                              {gap.priority}
+                            </Badge>
+                            <span className="font-medium text-sm">{gap.skill}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs text-muted-foreground">
+                              Current: {gap.currentLevel}% → Required: {gap.requiredLevel}%
+                            </div>
+                            <div className="w-24 mt-1">
+                              <Progress value={gap.currentLevel} variant="default" className="h-1.5" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <Link to="/dashboard">
+                      <Button variant="hero" size="lg" className="gap-2">
+                        View Full Dashboard
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               )}
 
@@ -216,6 +304,66 @@ const UploadPage = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Manual Skills Input */}
+          {uploadState === "idle" && (
+            <Card variant="elevated" className="mb-6">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Plus className="h-5 w-5 text-accent" />
+                  Add Skills Manually
+                </CardTitle>
+                <CardDescription>
+                  Enter your skills separated by commas (e.g., Python, JavaScript, Web Development)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="skills">Your Skills</Label>
+                    <Textarea
+                      id="skills"
+                      placeholder="Python, JavaScript, React, Machine Learning, Data Analysis, SQL, Web Development..."
+                      value={manualSkills}
+                      onChange={(e) => handleSkillsInput(e.target.value)}
+                      className="mt-2 min-h-[100px]"
+                    />
+                  </div>
+                  
+                  {parsedSkills.length > 0 && (
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-2 block">
+                        Parsed Skills ({parsedSkills.length})
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {parsedSkills.map((skill, idx) => (
+                          <Badge key={idx} variant="skill" className="gap-1 pr-1">
+                            {skill}
+                            <button
+                              onClick={() => removeSkill(skill)}
+                              className="ml-1 hover:bg-accent/20 rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button 
+                    variant="accent" 
+                    className="w-full gap-2"
+                    disabled={parsedSkills.length === 0}
+                    onClick={handleAnalyzeSkills}
+                  >
+                    <Brain className="h-4 w-4" />
+                    Analyze Skills & Get Career Insights
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Alternative Option */}
           <Card variant="default" className="text-center">
