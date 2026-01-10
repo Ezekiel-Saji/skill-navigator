@@ -68,11 +68,11 @@ export const mockSkillGaps: SkillGap[] = [
 ];
 
 export const mockCRI: CRIScore = {
-  overall: 68,
-  skillMatch: 72,
-  projectScore: 65,
-  industryRelevance: 70,
-  learningProgress: 64,
+  overall: 52,
+  skillMatch: 44,
+  projectScore: 62,
+  industryRelevance: 44,
+  learningProgress: 66,
   label: 'Emerging',
   predictedScore: 82,
   trend: 'up',
@@ -153,7 +153,7 @@ export const mockExplanations: Explanation[] = [
 
 export const mockOutcomePrediction: OutcomePrediction = {
   currentState: {
-    cri: 68,
+    cri: 52,
     topSkills: ['Python', 'Data Analysis', 'Machine Learning'],
     readiness: 'Emerging',
   },
@@ -164,8 +164,8 @@ export const mockOutcomePrediction: OutcomePrediction = {
     timeframe: '6 months',
   },
   improvements: [
-    { metric: 'Career Readiness Index', current: 68, predicted: 85, change: 17 },
-    { metric: 'Skill Match Score', current: 72, predicted: 92, change: 20 },
+    { metric: 'Career Readiness Index', current: 52, predicted: 85, change: 33 },
+    { metric: 'Skill Match Score', current: 44, predicted: 92, change: 20 },
     { metric: 'Industry Relevance', current: 70, predicted: 88, change: 18 },
     { metric: 'Placement Probability', current: 45, predicted: 78, change: 33 },
   ],
@@ -173,9 +173,9 @@ export const mockOutcomePrediction: OutcomePrediction = {
 
 export const mockStudentProfile: StudentProfile = {
   id: '1',
-  name: 'Arjun Sharma',
-  email: 'arjun.sharma@university.edu',
-  year: 3,
+  name: 'Ezekiel Saji',
+  email: 'ezekielsaji@gmail.com',
+  year: 2,
   department: 'Computer Science',
   careerGoal: mockCareerGoals[0],
   skills: mockSkills,

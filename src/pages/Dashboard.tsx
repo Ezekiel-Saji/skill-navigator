@@ -11,12 +11,15 @@ import {
   OutcomePredictor,
   SkillGapAnalysis,
 } from "@/components/dashboard";
+import ProjectEditor from "@/components/dashboard/ProjectEditor";
+import { Project } from "@/lib/types";
 import {
   mockStudentProfile,
   mockSkillGaps,
   mockExplanations,
   mockOutcomePrediction,
 } from "@/lib/mockData";
+import { useEffect, useState } from "react";
 import { 
   User, 
   Target, 
@@ -29,6 +32,56 @@ import {
 
 const Dashboard = () => {
   const profile = mockStudentProfile;
+  const [storedGoal, setStoredGoal] = useState<{ title: string; period: string } | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("studentGoal");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setStoredGoal({ title: parsed.title || "", period: parsed.period || "" });
+      }
+    } catch (e) {
+      // ignore
+    }
+    const handler = (e: any) => {
+      const d = e?.detail;
+      if (d) {
+        setStoredGoal({ title: d.title || "", period: d.period || "" });
+      } else {
+        setStoredGoal(null);
+      }
+    };
+    window.addEventListener("studentGoalChanged", handler as EventListener);
+    return () => window.removeEventListener("studentGoalChanged", handler as EventListener);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("studentProjects");
+      if (raw) {
+        const parsed = JSON.parse(raw) as Project[];
+        setProjects(parsed);
+      } else {
+        setProjects(profile.projects || []);
+      }
+    } catch (e) {
+      setProjects(profile.projects || []);
+    }
+  }, []);
+
+  const addProject = (p: Project) => {
+    setProjects(prev => {
+      const next = [p, ...prev];
+      try {
+        localStorage.setItem("studentProjects", JSON.stringify(next));
+      } catch (e) {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   return (
     <PageLayout showFooter={false}>
@@ -55,10 +108,13 @@ const Dashboard = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                {profile.careerGoal && (
-                  <Badge variant="glass" className="px-4 py-2">
+                {(storedGoal?.title || profile.careerGoal) && (
+                  <Badge variant="glass" className="px-4 py-2 max-w-xs truncate">
                     <Target className="h-4 w-4 mr-2" />
-                    {profile.careerGoal.title}
+                    {storedGoal?.title ?? profile.careerGoal.title}
+                    {storedGoal?.period && (
+                      <span className="block text-xs text-white/70">{storedGoal.period}</span>
+                    )}
                   </Badge>
                 )}
                 <Button variant="glass" size="icon">
@@ -84,6 +140,30 @@ const Dashboard = () => {
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-8">
+              <div className="grid lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-1">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Your Goal</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {storedGoal?.title || profile.careerGoal ? (
+                        <div>
+                          <div className="font-semibold text-foreground">{storedGoal?.title ?? profile.careerGoal.title}</div>
+                          {storedGoal?.period && (
+                            <div className="text-xs text-muted-foreground mt-1">{storedGoal.period}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-muted-foreground">No goal set. Go to the home page to add your ambition.</div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="lg:col-span-2">
+                  {/* placeholder: rest of overview content continues below */}
+                </div>
+              </div>
               {/* Quick Stats */}
               <div className="grid md:grid-cols-4 gap-4">
                 {[
@@ -134,14 +214,12 @@ const Dashboard = () => {
                       <Briefcase className="h-5 w-5 text-accent" />
                       Validated Projects
                     </CardTitle>
-                    <Button variant="outline" size="sm">
-                      Add Project
-                    </Button>
+                    <ProjectEditor onAdd={addProject} />
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-4">
-                    {profile.projects.map((project) => (
+                    {projects.map((project) => (
                       <div
                         key={project.id}
                         className="p-4 rounded-xl border bg-gradient-to-br from-background to-secondary/20"
@@ -155,6 +233,13 @@ const Dashboard = () => {
                         <p className="text-sm text-muted-foreground mb-3">
                           {project.description}
                         </p>
+                        {project.githubRepo && (
+                          <div className="mb-2">
+                            <a href={project.githubRepo} target="_blank" rel="noreferrer" className="text-sm text-accent underline">
+                              View repository
+                            </a>
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-1.5">
                           {project.skills.map((skill, i) => (
                             <Badge key={i} variant="secondary" className="text-xs">
@@ -176,6 +261,38 @@ const Dashboard = () => {
 
             {/* Insights Tab */}
             <TabsContent value="insights" className="space-y-8">
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top AI Recommendations</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                      {mockExplanations.slice(0, 3).map((e) => (
+                        <li key={e.id}>{e.title}</li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Predicted Outcome</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-display font-bold text-foreground mb-1">
+                      {mockOutcomePrediction.predictedState.cri} CRI
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      Expected in {mockOutcomePrediction.predictedState.timeframe}
+                    </div>
+                    <div className="text-sm">
+                      New skills: {mockOutcomePrediction.predictedState.newSkills.join(", ")}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
               <ExplainablePanel explanations={mockExplanations} />
             </TabsContent>
           </Tabs>

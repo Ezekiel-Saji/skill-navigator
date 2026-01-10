@@ -117,4 +117,5 @@ export interface Project {
   skills: string[];
   validated: boolean;
   score: number;
+  githubRepo?: string;
 }

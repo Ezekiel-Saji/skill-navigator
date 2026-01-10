@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageLayout } from "@/components/layout";
+import GoalEditor from "@/components/dashboard/GoalEditor";
 import { 
   Brain, 
   Upload, 
@@ -103,6 +104,11 @@ const Index = () => {
                   First Year? Start Here
                 </Button>
               </Link>
+            </div>
+
+            {/* Inline goal editor (home) */}
+            <div className="mt-10">
+              <GoalEditor />
             </div>
 
             {/* Stats */}
